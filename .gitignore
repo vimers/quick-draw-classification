@@ -1,2 +1,4 @@
 *.record
 __pycache__
+ckpt
+logs
