@@ -32,8 +32,10 @@ def main(argv):
         logger.info("ckpt dir %s not exist, create", ckpt_dir)
         os.makedirs(Flags.ckpt_path)
     full_dataset = tf.data.TFRecordDataset([Flags.tfrecord_path])
+    full_dataset_size = sum(1 for _ in full_dataset)
+    logger.debug("full_dataset size %d", full_dataset_size)
     full_dataset = full_dataset.map(parse_example, num_parallel_calls=tf.data.AUTOTUNE)
-    full_dataset = full_dataset.shuffle(buffer_size=1024).batch(TRAIN_BATCH)
+    full_dataset = full_dataset.shuffle(buffer_size=1024).repeat().batch(TRAIN_BATCH)
     model = make_or_restore_model(Flags.ckpt_path)
     if model is None:
         logger.error("model is None")
@@ -49,10 +51,8 @@ def main(argv):
                 ]
         logger.info("========train========")
         train_dataset = full_dataset
-        train_dataset_size = sum(1 for _ in train_dataset)
-        logger.debug("dataset size %d", train_dataset_size)
         model.fit(train_dataset, batch_size=TRAIN_BATCH, epochs=100,
-                steps_per_epoch=train_dataset_size/TRAIN_BATCH, callbacks=callbacks)
+                steps_per_epoch=full_dataset_size/TRAIN_BATCH, callbacks=callbacks)
     else:
         logger.info("========evaluate========")
         evaluate_dataset = full_dataset.take(EVALUATE_SIZE)
