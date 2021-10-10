@@ -3,61 +3,27 @@ import os
 
 from tensorflow import keras
 from tensorflow.keras import layers
+from data.common import MODEL_INPUT_SHAPE, get_class_num
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 def __get_uncompiled_model():
-    model = keras.Sequential()
-    model.add(keras.Input(shape=(256, 256, 1)))
-    model.add(layers.Conv2D(16, 5, strides=2))
-    model.add(layers.BatchNormalization())
-    model.add(layers.LeakyReLU())
-    model.add(layers.Conv2D(32, 5))
-    model.add(layers.BatchNormalization())
-    model.add(layers.LeakyReLU())
-    model.add(layers.MaxPool2D(3))
-    model.add(layers.Conv2D(32, 5))
-    model.add(layers.BatchNormalization())
-    model.add(layers.LeakyReLU())
-    model.add(layers.Conv2D(32, 5))
-    model.add(layers.BatchNormalization())
-    model.add(layers.LeakyReLU())
-    model.add(layers.Conv2D(32, 5))
-    model.add(layers.BatchNormalization())
-    model.add(layers.LeakyReLU())
-    model.add(layers.Conv2D(32, 5))
-    model.add(layers.BatchNormalization())
-    model.add(layers.LeakyReLU())
-    model.add(layers.Conv2D(32, 5))
-    model.add(layers.BatchNormalization())
-    model.add(layers.LeakyReLU())
-    model.add(layers.Conv2D(32, 5))
-    model.add(layers.BatchNormalization())
-    model.add(layers.LeakyReLU())
-    model.add(layers.Conv2D(32, 5))
-    model.add(layers.BatchNormalization())
-    model.add(layers.LeakyReLU())
-    model.add(layers.Conv2D(64, 5))
-    model.add(layers.BatchNormalization())
-    model.add(layers.LeakyReLU())
-    model.add(layers.Conv2D(64, 3))
-    model.add(layers.BatchNormalization())
-    model.add(layers.LeakyReLU())
-    model.add(layers.Conv2D(128, 3))
-    model.add(layers.BatchNormalization())
-    model.add(layers.LeakyReLU())
-    model.add(layers.GlobalMaxPool2D())
-    model.add(layers.Dense(68))
-    model.add(layers.Softmax())
-    # print model structure
+    inputs = keras.Input(MODEL_INPUT_SHAPE)
+    base_model = keras.applications.MobileNet(input_shape=MODEL_INPUT_SHAPE, alpha=1.0,
+            include_top=False, weights='imagenet')
+    base_model.trainable = False
+    x = base_model(inputs, training=False)
+    x = keras.layers.GlobalAveragePooling2D()(x)
+    output = keras.layers.Dense(get_class_num(), activation='softmax')(x)
+    model = keras.models.Model(inputs, output)
     model.summary()
     return model
 
 def __get_compiled_model():
     model = __get_uncompiled_model()
-    model.compile(optimizer="rmsprop",
+    model.compile(optimizer="adam",
             loss="sparse_categorical_crossentropy",
             metrics="sparse_categorical_accuracy")
     return model
